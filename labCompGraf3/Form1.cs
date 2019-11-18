@@ -20,6 +20,71 @@ namespace labCompGraf3
             pictureBox1.BackColor = Color.DarkSeaGreen;
         }
 
+        private void Swap(ref int x,ref int y)
+        {
+            int tmp = x;
+            x = y;
+            y = tmp;
+        }
+
+        public void BresenhamLine(int x0, int y0, int x1, int y1, Bitmap bmp, Color color)
+        {
+
+            bool checkM = Math.Abs(y1 - y0) > Math.Abs(x1 - x0);
+
+            if (checkM)
+            {
+                Swap(ref x0, ref y0);
+                Swap(ref x1, ref y1);
+            }
+
+            if (x0 > x1)
+            {
+                Swap(ref x0, ref x1);
+                Swap(ref y0, ref y1);
+            }
+            double dx = x1 - x0;
+            double dy = Math.Abs(y1 - y0);
+            double m = dy / dx;
+            double e = m - 0.5;
+            int ySign = (y0 < y1) ? 1 : -1;
+            int y = y0;
+            for (int x = x0; x <= x1; x++)
+            {
+                bmp.SetPixel(checkM ? y : x, checkM ? x : y, color);
+                if (e >= 0)
+                {
+                    y += ySign;
+                    e += m - 1;
+                }
+                else e += m;
+            }
+        }
+
+        public void BezierDrawPoints(PointF[] pointF, double t, Bitmap bmp)
+        {            
+            if (pointF.Length > 1)
+            {
+                PointF[] tmp = new PointF[pointF.Length - 1];
+                for (int i = 0; i < pointF.Length - 1; i++)
+                {
+                    tmp[i].X = pointF[i].X + (pointF[i + 1].X - pointF[i].X) * (float)t;
+                    tmp[i].Y = pointF[i].Y + (pointF[i + 1].Y - pointF[i].Y) * (float)t;
+                }
+                BezierDrawPoints(tmp, t, bmp);
+            }
+            else bmp.SetPixel((int)pointF[0].X, (int)pointF[0].Y, Color.Red);
+            return;
+        }
+               
+        public void BezierCurve(PointF[] pointF, Bitmap bmp)
+        {
+            for (double t = 0.001; t < 1; t += 0.001)
+            {
+                BezierDrawPoints(pointF, t, bmp);
+            }
+        }
+
         public void Draw8Pixels(int x, int y, int x0, int y0, Bitmap bmp, Color color)
         {
             bmp.SetPixel(x + x0, y + y0, color);
@@ -150,8 +215,18 @@ namespace labCompGraf3
             return CALLIKA;
         } 
 
+
+
         bool first = true;
         Random rnd = new Random();
+        PointF[] BezierPoints = new PointF[]
+        {
+            new PointF(300,180),
+            new PointF(270,300),
+            new PointF(400,15),
+            new PointF(300,300),
+
+        };
         private void RunClickStartButton()
         {
             pictureBox1.BackColor = Color.DarkSeaGreen;
@@ -168,9 +243,14 @@ namespace labCompGraf3
             int y = rnd.Next(r + 1, pictureBox1.Height - r - 1);
             if (bmp.GetPixel(x, y).ToArgb() != new Color().ToArgb()) return;
 
-            BrezenhamCircle(x, y, r, bmp, Color.Yellow);
+            BezierCurve(BezierPoints, bmp);
 
-            Pattern(x, y, bmp, CALLIKA, w, h);
+            BresenhamLine((int)BezierPoints[0].X, (int)BezierPoints[0].Y, (int)BezierPoints[1].X, (int)BezierPoints[1].Y, bmp, Color.Black);
+            BresenhamLine((int)BezierPoints[1].X, (int)BezierPoints[1].Y, (int)BezierPoints[2].X, (int)BezierPoints[2].Y, bmp, Color.Black);
+            BresenhamLine((int)BezierPoints[2].X, (int)BezierPoints[2].Y, (int)BezierPoints[3].X, (int)BezierPoints[3].Y, bmp, Color.Black);
+
+            //BrezenhamCircle(x, y, r, bmp, Color.Yellow);
+            //Pattern(x, y, bmp, CALLIKA, w, h);
 
             pictureBox1.Image = bmp;
         }
@@ -183,7 +263,6 @@ namespace labCompGraf3
             thread.Join();
             //RunClickStartButton();
         }
-
 
         public void PatternBrute(int x, int y, Bitmap bmp, Color[,] color_pattern, int w, int h)
         {
